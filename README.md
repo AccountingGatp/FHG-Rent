@@ -3,6 +3,8 @@
 A browser-based web application that turns the **monthly Rent Input sheet** into a
 **QuickBooks-ready bill-import workbook**, following the FHG Rent SOP.
 
+**Live app:** https://fhg-rent-qb-import.vercel.app
+
 Everything runs **client-side** — the uploaded spreadsheet never leaves the browser.
 
 ## What it produces
