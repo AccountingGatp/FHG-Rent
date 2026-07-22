@@ -1,33 +1,31 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { generate } from './lib/rentImport.js';
 
-// Default MONTH TOKEN / BILL DATE from today: e.g. Jul'26Rent + 07/01/2026.
-function defaults() {
-  const now = new Date();
-  const mon = now.toLocaleString('en-US', { month: 'short' }); // Jul
-  const yy = String(now.getFullYear()).slice(-2);
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  return {
-    token: `${mon}'${yy}Rent`,
-    billDate: `${mm}/01/${now.getFullYear()}`,
-  };
-}
-
 const fmt = (n) =>
   (n ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+// BILL DATE must be MM/DD/YYYY.
+const DATE_RE = /^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/\d{4}$/;
+
 export default function App() {
-  const d = defaults();
-  const [token, setToken] = useState(d.token);
-  const [billDate, setBillDate] = useState(d.billDate);
+  // MONTH TOKEN / BILL DATE are required — the user must enter them; nothing is pre-filled.
+  const [token, setToken] = useState('');
+  const [billDate, setBillDate] = useState('');
   const [file, setFile] = useState(null);
+  const [touched, setTouched] = useState(false); // show validation only after a build attempt
   const [status, setStatus] = useState('idle'); // idle | working | done | error
   const [error, setError] = useState('');
   const [report, setReport] = useState(null);
   const [blobUrl, setBlobUrl] = useState(null);
   const inputRef = useRef(null);
 
-  const outName = `Rent_QB_Import_${token.replace(/[^A-Za-z0-9]/g, '')}.xlsx`;
+  const tokenTrim = token.trim();
+  const dateTrim = billDate.trim();
+  const tokenOk = tokenTrim.length > 0;
+  const dateOk = DATE_RE.test(dateTrim);
+  const canBuild = !!file && tokenOk && dateOk;
+
+  const outName = `Rent_QB_Import_${(tokenTrim || 'Rent').replace(/[^A-Za-z0-9]/g, '')}.xlsx`;
 
   const onFile = useCallback((f) => {
     if (!f) return;
@@ -40,12 +38,13 @@ export default function App() {
   }, [blobUrl]);
 
   const run = useCallback(async () => {
-    if (!file) return;
+    setTouched(true);
+    if (!canBuild) return;
     setStatus('working');
     setError('');
     try {
       const buf = await file.arrayBuffer();
-      const { report, blob } = await generate(buf, { token, billDate });
+      const { report, blob } = await generate(buf, { token: tokenTrim, billDate: dateTrim });
       if (blobUrl) URL.revokeObjectURL(blobUrl);
       setBlobUrl(URL.createObjectURL(blob));
       setReport(report);
@@ -55,7 +54,7 @@ export default function App() {
       setError(e.message || String(e));
       setStatus('error');
     }
-  }, [file, token, billDate, blobUrl]);
+  }, [file, canBuild, tokenTrim, dateTrim, blobUrl]);
 
   const onDrop = useCallback((e) => {
     e.preventDefault();
@@ -73,19 +72,35 @@ export default function App() {
       </header>
 
       <section className="card">
+        <div className="step-label"><span className="step-num">1</span> Set the month for this run <em>(required)</em></div>
         <div className="grid2">
           <label className="field">
-            <span>MONTH TOKEN</span>
-            <input value={token} onChange={(e) => setToken(e.target.value)} placeholder="Jul'26Rent" />
-            <small>S.No prefix. e.g. <code>Jul'26Rent01, 02, …</code></small>
+            <span>MONTH TOKEN <b className="req">*</b></span>
+            <input
+              className={touched && !tokenOk ? 'invalid' : ''}
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="e.g. Jul'26Rent"
+            />
+            {touched && !tokenOk
+              ? <small className="err-text">Enter a month token — this is required.</small>
+              : <small>S.No prefix. e.g. <code>Jul'26Rent01, 02, …</code></small>}
           </label>
           <label className="field">
-            <span>BILL DATE</span>
-            <input value={billDate} onChange={(e) => setBillDate(e.target.value)} placeholder="07/01/2026" />
-            <small>First of the billing month, on every bill line.</small>
+            <span>BILL DATE <b className="req">*</b></span>
+            <input
+              className={touched && !dateOk ? 'invalid' : ''}
+              value={billDate}
+              onChange={(e) => setBillDate(e.target.value)}
+              placeholder="MM/DD/YYYY — e.g. 07/01/2026"
+            />
+            {touched && !dateOk
+              ? <small className="err-text">Enter the bill date as MM/DD/YYYY (first of the billing month).</small>
+              : <small>First of the billing month, on every bill line.</small>}
           </label>
         </div>
 
+        <div className="step-label"><span className="step-num">2</span> Upload this month's Rent Input sheet</div>
         <div
           className={`dropzone ${file ? 'has-file' : ''}`}
           onClick={() => inputRef.current?.click()}
@@ -116,9 +131,18 @@ export default function App() {
           )}
         </div>
 
-        <button className="primary" disabled={!file || status === 'working'} onClick={run}>
+        <button className="primary" disabled={!canBuild || status === 'working'} onClick={run}>
           {status === 'working' ? 'Building…' : 'Build QB Import Workbook'}
         </button>
+        {!canBuild && (
+          <p className="hint">
+            {(!tokenOk || !dateOk) && !file
+              ? 'Enter MONTH TOKEN and BILL DATE, then upload the Rent Input sheet to start.'
+              : (!tokenOk || !dateOk)
+                ? 'Enter a valid MONTH TOKEN and BILL DATE to continue.'
+                : 'Upload the Rent Input sheet to continue.'}
+          </p>
+        )}
 
         {status === 'error' && <div className="alert error">⚠️ {error}</div>}
       </section>

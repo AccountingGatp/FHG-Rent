@@ -50,8 +50,9 @@ U HVAC · V Sign · W Snow Removal · X Total Pre-Tax · Y HST`
 ## Usage
 
 1. Open the app.
-2. Set **MONTH TOKEN** (e.g. `Jul'26Rent`) and **BILL DATE** (e.g. `07/01/2026`) — both default
-   to the current month.
+2. **Enter MONTH TOKEN** (e.g. `Jul'26Rent`) and **BILL DATE** (`MM/DD/YYYY`, e.g. `07/01/2026`).
+   Both are **required** — the app does not pre-fill them, and generation stays disabled until
+   both are provided (BILL DATE must be valid `MM/DD/YYYY`).
 3. Drop in this month's Rent Input `.xlsx`.
 4. Click **Build QB Import Workbook**, review the reconciliation summary, and download.
 
