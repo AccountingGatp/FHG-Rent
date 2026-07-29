@@ -5,6 +5,10 @@ A browser-based web application that turns the **monthly Rent Input sheet** into
 
 **Live app:** https://fhg-rent-qb-import.vercel.app
 
+**Offline tool:** [`offline-tool/Rent_QB_Import_Tool.html`](offline-tool/) — a single self-contained
+HTML file. Download it, double-click, and it runs in any browser with **no server, no install, and
+no internet**.
+
 Everything runs **client-side** — the uploaded spreadsheet never leaves the browser.
 
 ## What it produces
@@ -62,9 +66,10 @@ U HVAC · V Sign · W Snow Removal · X Total Pre-Tax · Y HST`
 
 ```bash
 npm install
-npm run dev       # local dev server
-npm run build     # production build -> dist/
-npm run preview   # preview the production build
+npm run dev            # local dev server
+npm run build          # production build -> dist/
+npm run build:offline  # single self-contained file -> offline/index.html
+npm run preview        # preview the production build
 ```
 
 Verify the generation logic against a real input sheet:
